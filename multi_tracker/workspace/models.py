@@ -3,10 +3,21 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-# Using built in user model, one-to-one relationship, forgein key is user
+# Moved tenant above for definition
+class Tenant(models.Model):
+    name = models.CharField(max_length=255)
+    domain = models.CharField(max_length=255, unique=True)  # For subdomain-based routing
+
+    def __str__(self):
+        return self.name
+    
+# Using built in user model, one-to-one relationship, forgein key is user, further roles added to 
+# introduce RBAC
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
     is_manager = models.BooleanField(default=False)
+    is_tenant_admin = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username} - {'Manager' if self.is_manager else 'Employee'}"
@@ -20,6 +31,7 @@ class AttendanceRecord(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    tenant = models.ForeignKey('Tenant', on_delete=models.CASCADE)
     date = models.DateField()
     type = models.CharField(max_length=3, choices=WORK_TYPES)
 
