@@ -1,17 +1,27 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.utils import timezone
+from django.utils.timezone import now
+import uuid
 
 # Moved tenant above for definition
 class Tenant(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
     domain = models.CharField(max_length=255, unique=True)  # For subdomain-based routing
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+
+    def save(self, *args, **kwargs):
+        # Ensure there’s always a "Global Tenant" created if no tenants exist
+        if not Tenant.objects.exists():
+            self.name = "Global Tenant"
+            self.domain = "global"
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
-    
-# Using built in user model, one-to-one relationship, forgein key is user, further roles added to 
+
+
+# Using built-in user model, one-to-one relationship, foreign key is user, further roles added to
 # introduce RBAC
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
@@ -64,7 +74,7 @@ class LeaveRequest(models.Model):
     manager = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_leaves')
 
     def clean(self):
-        if self.start_date < timezone.now().date():
+        if self.start_date < now().date():
             raise ValidationError("The start date cannot be in the past.")
         if self.end_date < self.start_date:
             raise ValidationError("The end date cannot be before the start date.")
