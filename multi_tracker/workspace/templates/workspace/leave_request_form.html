@@ -1,0 +1,22 @@
+{% extends 'workspace/base.html' %}
+
+{% block content %}
+<h1>Request Leave</h1>
+<form method="post">
+    {% csrf_token %}
+    <label for="leave_type">Leave Type:</label>
+    <select id="leave_type" name="leave_type">
+        {% for type, label in leave_types %}
+        <option value="{{ type }}">{{ label }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="start_date">Start Date:</label>
+    <input type="date" id="start_date" name="start_date" required>
+
+    <label for="end_date">End Date:</label>
+    <input type="date" id="end_date" name="end_date" required>
+
+    <button type="submit">Submit</button>
+</form>
+{% endblock %}
