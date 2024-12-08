@@ -12,6 +12,8 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('leave-requests/', views.leave_request_list, name='leave_requests'),
+    path('leave/approve/<int:leave_id>/', views.approve_leave, name='approve_leave'),
+    path('leave/reject/<int:leave_id>/', views.reject_leave, name='reject_leave'),
     
     #
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

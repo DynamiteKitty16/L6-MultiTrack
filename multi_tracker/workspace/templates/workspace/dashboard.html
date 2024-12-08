@@ -1,8 +1,31 @@
-{% extends "workspace/base.html" %}
-
-{% block title %}Dashboard{% endblock %}
+{% extends 'workspace/base.html' %}
 
 {% block content %}
-<h1>Dashboard</h1>
-<p>Welcome, {{ user.username }}!</p>
+<h1>Welcome, {{ user.username }}</h1>
+
+<h2>Reminders</h2>
+<ul>
+    {% for reminder in reminders %}
+        <li>{{ reminder.title }} - {{ reminder.date }}</li>
+    {% endfor %}
+</ul>
+
+<h2>Your Attendance Records</h2>
+<ul>
+    {% for record in attendance_records %}
+        <li>{{ record.date }} - {{ record.get_type_display }}</li>
+    {% endfor %}
+</ul>
+
+{% if leave_requests %}
+<h2>Pending Leave Requests (For Managers)</h2>
+<ul>
+    {% for leave in leave_requests %}
+        <li>
+            {{ leave.user.username }} requested {{ leave.get_leave_type_display }}
+            from {{ leave.start_date }} to {{ leave.end_date }}
+        </li>
+    {% endfor %}
+</ul>
+{% endif %}
 {% endblock %}
