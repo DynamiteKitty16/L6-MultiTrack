@@ -2,6 +2,32 @@ from django.shortcuts import render, get_object_or_404, redirect
 from .models import AttendanceRecord, LeaveRequest
 from django.contrib.auth.decorators import login_required
 from .decorators import tenant_required
+from django.contrib.auth.views import LoginView
+
+# Login view
+class CustomLoginView(LoginView):
+    template_name = 'workspace/login.html'
+
+# Home view
+def home(request):
+    """Public landing page"""
+    return render(request, 'workspace/home.html')
+
+# Default dashboard
+@login_required
+def dashboard(request):
+    """User dashboard"""
+    return render(request, 'workspace/dashboard.html')
+
+# Updated leave requests
+@login_required
+def leave_request_list(request):
+    """
+    Displays a list of leave requests for the logged-in user.
+    """
+    leave_requests = LeaveRequest.objects.filter(user=request.user).order_by('-start_date')
+    context = {'leave_requests': leave_requests}
+    return render(request, 'workspace/leave_request_list.html', context)
 
 # AttendanceRecord List View
 @login_required
