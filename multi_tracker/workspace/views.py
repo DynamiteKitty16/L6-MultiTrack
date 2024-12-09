@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from .forms import AttendanceRecordForm
 from .decorators import tenant_required
 from django.contrib.auth.views import LoginView
+from django.contrib.auth.forms import UserCreationForm
 from django.utils.timezone import now
 from datetime import datetime
 
@@ -14,7 +15,18 @@ class CustomLoginView(LoginView):
 # Home view
 def home(request):
     """Public landing page"""
-    return render(request, 'workspace/home.html')
+    return render(request, 'workspace/landing.html')
+
+# Landing page redirect for register / login
+def register(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('login')
+    else:
+        form = UserCreationForm()
+    return render(request, 'workspace/register.html', {'form': form})
 
 # Default dashboard
 @login_required

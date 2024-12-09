@@ -10,6 +10,7 @@ urlpatterns = [
     
     # Custom URLs
     path('', views.home, name='home'),
+    path('register/', views.register, name='register'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('leave-requests/', views.leave_request_list, name='leave_requests'),
     path('leave/approve/<int:leave_id>/', views.approve_leave, name='approve_leave'),
