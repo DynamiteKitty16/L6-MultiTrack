@@ -1,14 +1,17 @@
 {% extends 'workspace/base.html' %}
 
-{% block title %}Welcome to MultiTracker{% endblock %}
-
 {% block content %}
-<div class="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-indigo-500 to-purple-700 text-white">
+<div class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-500 to-cyan-500 text-white">
+    <!-- Main Welcome Section -->
     <div class="bg-white text-gray-800 p-8 rounded-lg shadow-lg max-w-lg w-full">
         <h1 class="text-3xl font-extrabold mb-4 text-center">
             Welcome to <span class="text-purple-700">MultiTracker</span>
         </h1>
-        <p class="text-center mb-6">Your go-to platform for managing leave requests and attendance records.</p>
+        <p class="text-center mb-6">
+            Your go-to platform for managing leave requests and attendance records.
+        </p>
+
+        <!-- Login and Register Buttons -->
         <div class="flex justify-center gap-6">
             <a href="{% url 'login' %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">
                 Login
@@ -18,16 +21,10 @@
             </a>
         </div>
     </div>
-    <div class="mt-8 bg-white bg-opacity-20 p-4 rounded shadow-md max-w-xl">
-        <h2 class="text-xl font-bold mb-2 text-center">Upcoming Events</h2>
-        <ul class="divide-y divide-gray-200 text-center">
-            {% for reminder in reminders %}
-            <li class="py-2">
-                <span class="font-semibold">{{ reminder.title }}</span>
-                - {{ reminder.date }}
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
+
+    <!-- Footer -->
+    <footer class="mt-10 text-sm">
+        © {{ year }} MultiTracker
+    </footer>
 </div>
 {% endblock %}

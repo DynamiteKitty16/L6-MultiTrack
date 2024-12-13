@@ -1,65 +1,99 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import AttendanceRecord, LeaveRequest
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from .forms import AttendanceRecordForm
-from .decorators import tenant_required
 from django.contrib.auth.views import LoginView
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib import messages
+from django.http import JsonResponse
 from django.utils.timezone import now
-from datetime import datetime
+from django.db.models import Case, When, Value, IntegerField, Count
+from datetime import datetime, timedelta
+from collections import Counter
 
-# Login view
-class CustomLoginView(LoginView):
-    template_name = 'workspace/login.html'
+from .models import UserProfile, LeaveRequest, AttendanceRecord, User
+from .forms import CustomUserCreationForm, AttendanceRecordForm, LeaveRequestForm
 
-# Home view
+
+# Home View
 def home(request):
-    """Public landing page"""
-    return render(request, 'workspace/landing.html')
+    """
+    Public landing page with the current year.
+    """
+    year = datetime.now().year
+    return render(request, 'workspace/landing.html', {"year": year})
 
-# Landing page redirect for register / login
+
+# Register View
 def register(request):
+    """
+    User registration using the custom form.
+    Redirects to the dashboard upon successful registration.
+    """
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('login')
+            user = form.save()
+            user.backend = 'django.contrib.auth.backends.ModelBackend'  # Set default backend
+            login(request, user)
+            return redirect('dashboard')  # Redirect to the user dashboard
+        else:
+            return render(request, 'workspace/register.html', {'form': form})
     else:
-        form = UserCreationForm()
+        form = CustomUserCreationForm()
+
     return render(request, 'workspace/register.html', {'form': form})
 
-# Default dashboard
+
+# Login View
+class CustomLoginView(LoginView):
+    """
+    Custom login view with a tailored template.
+    """
+    template_name = 'workspace/login.html'
+
+
+# Logout View
+@login_required
+def custom_logout(request):
+    """
+    Logs out the user and redirects to the home page.
+    """
+    logout(request)
+    return redirect('home')
+
+
+# Dashboard View
 @login_required
 def dashboard(request):
-    """User dashboard with reminders and summaries"""
+    """
+    User dashboard displaying reminders, attendance summaries, and leave requests for managers.
+    """
     today = now().date()
 
-    # Reminders of non-workingdays
+    # Static reminders (e.g., bank holidays)
     reminders = [
         {"title": "Christmas Day", "date": datetime(2024, 12, 25).date()},
         {"title": "Boxing Day", "date": datetime(2024, 12, 26).date()},
         {"title": "New Year's Day", "date": datetime(2025, 1, 1).date()},
-        {"title": "Good Friday", "date": datetime(2025, 4, 21).date()},
+        {"title": "Good Friday", "date": datetime(2025, 4, 18).date()},
         {"title": "Easter Monday", "date": datetime(2025, 4, 21).date()},
         {"title": "Early May Bank Holiday", "date": datetime(2025, 5, 5).date()},
-        {"title": "Spring Bank Holiday", "date": datetime(2025, 5, 26).date()},
-        {"title": "Summer Bank Holiday", "date": datetime(2025, 8, 25).date()},
-        {"title": "Christmas Day", "date": datetime(2025, 12, 25).date()},
-        {"title": "Boxing Day", "date": datetime(2025, 12, 26).date()},
     ]
 
-    #Seperate past and upcoming reminders
-    past_reminders = [r for r in reminders if r["date"] <today]
-    upcoming_reminders = [r for r in reminders if r["date"] >=today]
+    # Separate past and upcoming reminders
+    past_reminders = [r for r in reminders if r["date"] < today]
+    upcoming_reminders = [r for r in reminders if r["date"] >= today]
 
-    # Attendence Summary
+    # Attendance Summary
     attendance_records = AttendanceRecord.objects.filter(user=request.user).order_by('-date')[:5]
 
-    # if a user is a manager, fetch team leave requests
+    # Manager-specific leave requests
     leave_requests = []
-    if request.user.userprofile.is_manager:
-        leave_requests = LeaveRequest.objects.filter(manager=request.user, status='P').order_by('-start_date')
-    
+    if hasattr(request.user, 'profile') and request.user.profile.is_manager:
+        leave_requests = LeaveRequest.objects.filter(
+            manager=request.user, 
+            status='P'
+        ).order_by('-start_date')
+
     context = {
         "past_reminders": past_reminders,
         "upcoming_reminders": upcoming_reminders,
@@ -67,64 +101,92 @@ def dashboard(request):
         "leave_requests": leave_requests,
     }
 
-    return render(request, 'workspace/dashboard.html')
+    return render(request, 'workspace/dashboard.html', context)
 
-# Updated leave requests
+
+# Leave Request List View
 @login_required
 def leave_request_list(request):
     """
-    Displays a list of leave requests for the logged-in user.
+    Displays leave requests for the logged-in user.
     """
     leave_requests = LeaveRequest.objects.filter(user=request.user).order_by('-start_date')
-    context = {'leave_requests': leave_requests}
-    return render(request, 'workspace/leave_request_list.html', context)
+    return render(request, 'workspace/leave_request_list.html', {'leave_requests': leave_requests})
 
-# AttendanceRecord List View
+
+# Attendance Record Views
 @login_required
-@tenant_required
 def attendance_list(request):
+    """
+    Displays a list of attendance records for the logged-in user.
+    """
     records = AttendanceRecord.objects.filter(user=request.user).order_by('-date')
-    return render(request, 'workspace/attendance-list.html', {'records': records})
+    return render(request, 'workspace/attendance_list.html', {'records': records})
 
-# AttendanceRecord Create View
+
 @login_required
-@tenant_required
 def attendance_create(request):
+    """
+    Handles the creation of attendance records.
+    """
     if request.method == 'POST':
-        form = AttendanceRecordForm (request.POST)
+        form = AttendanceRecordForm(request.POST)
         if form.is_valid():
-            # Save the form data to create the record
             attendance = form.save(commit=False)
             attendance.user = request.user
-            attendance.tenant = request.user.userprofile.tenant
+            attendance.tenant = request.user.profile.tenant
             attendance.save()
             return redirect('attendance_list')
-        
     else:
         form = AttendanceRecordForm()
 
     return render(request, 'workspace/attendance_create.html', {'form': form})
 
-# AttendanceRecord Delete View
+
 @login_required
-@tenant_required
 def attendance_delete(request, pk):
+    """
+    Deletes an attendance record.
+    """
     record = get_object_or_404(AttendanceRecord, pk=pk, user=request.user)
     record.delete()
     return redirect('attendance_list')
 
-# Manager approve leave
+
+# Leave Request Approval for Managers
 @login_required
 def approve_leave(request, leave_id):
+    """
+    Approves a leave request by a manager.
+    """
     leave = get_object_or_404(LeaveRequest, id=leave_id, manager=request.user)
     leave.status = 'A'
     leave.save()
     return redirect('dashboard')
 
-# Manager reject leave
+
 @login_required
 def reject_leave(request, leave_id):
+    """
+    Rejects a leave request by a manager.
+    """
     leave = get_object_or_404(LeaveRequest, id=leave_id, manager=request.user)
     leave.status = 'R'
     leave.save()
     return redirect('dashboard')
+
+
+# Attendance Summary (Utility)
+def get_attendance_counts_for_month(user):
+    """
+    Counts attendance records for the current month.
+    """
+    current_month = now().month
+    current_year = now().year
+    records = AttendanceRecord.objects.filter(
+        user=user, 
+        date__year=current_year, 
+        date__month=current_month
+    )
+    counts = Counter(record.type for record in records)
+    return dict(counts)

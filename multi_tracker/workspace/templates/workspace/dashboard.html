@@ -1,31 +1,70 @@
 {% extends 'workspace/base.html' %}
 
 {% block content %}
-<h1>Welcome, {{ user.username }}</h1>
+<div class="max-w-7xl mx-auto py-10 px-6">
 
-<h2>Reminders</h2>
-<ul>
-    {% for reminder in reminders %}
-        <li>{{ reminder.title }} - {{ reminder.date }}</li>
-    {% endfor %}
-</ul>
-
-<h2>Your Attendance Records</h2>
-<ul>
-    {% for record in attendance_records %}
-        <li>{{ record.date }} - {{ record.get_type_display }}</li>
-    {% endfor %}
-</ul>
-
-{% if leave_requests %}
-<h2>Pending Leave Requests (For Managers)</h2>
-<ul>
-    {% for leave in leave_requests %}
-        <li>
-            {{ leave.user.username }} requested {{ leave.get_leave_type_display }}
-            from {{ leave.start_date }} to {{ leave.end_date }}
+    <!-- Upcoming Reminders -->
+    <h2 class="text-2xl font-bold mb-4">Upcoming Events</h2>
+    <ul class="mb-6">
+        {% for reminder in upcoming_reminders %}
+        <li class="py-2 px-4 bg-blue-100 rounded-lg mb-2">
+            <strong>{{ reminder.title }}</strong>: {{ reminder.date|date:"j F Y" }}
         </li>
-    {% endfor %}
-</ul>
-{% endif %}
+        {% empty %}
+        <p>No upcoming events.</p>
+        {% endfor %}
+    </ul>
+
+    <!-- Attendance Records -->
+    <h2 class="text-2xl font-bold mb-4">Recent Attendance</h2>
+    <table class="table-auto w-full border-collapse border border-gray-300 mb-6">
+        <thead>
+            <tr>
+                <th class="border border-gray-300 px-4 py-2">Date</th>
+                <th class="border border-gray-300 px-4 py-2">Type</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in attendance_records %}
+            <tr>
+                <td class="border border-gray-300 px-4 py-2">{{ record.date|date:"j F Y" }}</td>
+                <td class="border border-gray-300 px-4 py-2">{{ record.get_type_display }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="2" class="text-center py-4">No attendance records found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pending Leave Requests (Manager-Only Section) -->
+    {% if leave_requests %}
+    <h2 class="text-2xl font-bold mb-4">Pending Leave Requests</h2>
+    <table class="table-auto w-full border-collapse border border-gray-300">
+        <thead>
+            <tr>
+                <th class="border border-gray-300 px-4 py-2">Employee</th>
+                <th class="border border-gray-300 px-4 py-2">Start Date</th>
+                <th class="border border-gray-300 px-4 py-2">End Date</th>
+                <th class="border border-gray-300 px-4 py-2">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for leave in leave_requests %}
+            <tr>
+                <td class="border border-gray-300 px-4 py-2">{{ leave.user.username }}</td>
+                <td class="border border-gray-300 px-4 py-2">{{ leave.start_date|date:"j F Y" }}</td>
+                <td class="border border-gray-300 px-4 py-2">{{ leave.end_date|date:"j F Y" }}</td>
+                <td class="border border-gray-300 px-4 py-2">{{ leave.get_status_display }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center py-4">No pending leave requests.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
 {% endblock %}

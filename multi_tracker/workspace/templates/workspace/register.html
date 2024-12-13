@@ -1,9 +1,41 @@
-{% extends 'workspace/base.html' %}
+{% extends "workspace/base.html" %}
+
+{% block title %}Register{% endblock %}
+
 {% block content %}
-<h2>Register</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Register</button>
-</form>
+<div class="min-h-screen flex items-center justify-center bg-gray-100">
+  <div class="bg-white shadow-md rounded-lg p-8 max-w-md w-full">
+    <h2 class="text-2xl font-bold text-center mb-6">Create an Account</h2>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      
+      <div>
+        <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+        <input type="text" id="username" name="username" required
+          class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+      </div>
+
+      <div>
+        <label for="password1" class="block text-sm font-medium text-gray-700">Password</label>
+        <input type="password" id="password1" name="password1" required
+          class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+      </div>
+
+      <div>
+        <label for="password2" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+        <input type="password" id="password2" name="password2" required
+          class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+      </div>
+
+      <button type="submit"
+        class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        Register
+      </button>
+    </form>
+
+    <p class="mt-4 text-sm text-center text-gray-600">
+      Already have an account? <a href="{% url 'login' %}" class="text-indigo-600 font-medium hover:underline">Login</a>
+    </p>
+  </div>
+</div>
 {% endblock %}
