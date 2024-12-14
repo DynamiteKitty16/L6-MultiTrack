@@ -6,27 +6,52 @@
 <div class="min-h-screen flex items-center justify-center bg-gray-100">
   <div class="bg-white shadow-md rounded-lg p-8 max-w-md w-full">
     <h2 class="text-2xl font-bold text-center mb-6">Create an Account</h2>
+    
     <form method="post" class="space-y-4">
       {% csrf_token %}
       
+      <!-- Display form errors -->
+      {% if form.errors %}
+      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded relative mb-4">
+        <ul>
+          {% for field, errors in form.errors.items %}
+          <li><strong>{{ field|title }}</strong>: {{ errors|join:", " }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      
+      <!-- First Name -->
       <div>
-        <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
-        <input type="text" id="username" name="username" required
-          class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        <label for="id_first_name" class="block text-sm font-medium text-gray-700">First Name</label>
+        {{ form.first_name }}
       </div>
 
+      <!-- Last Name -->
       <div>
-        <label for="password1" class="block text-sm font-medium text-gray-700">Password</label>
-        <input type="password" id="password1" name="password1" required
-          class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        <label for="id_last_name" class="block text-sm font-medium text-gray-700">Last Name</label>
+        {{ form.last_name }}
       </div>
 
+      <!-- Email -->
       <div>
-        <label for="password2" class="block text-sm font-medium text-gray-700">Confirm Password</label>
-        <input type="password" id="password2" name="password2" required
-          class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        <label for="id_email" class="block text-sm font-medium text-gray-700">Email Address</label>
+        {{ form.email }}
       </div>
 
+      <!-- Password -->
+      <div>
+        <label for="id_password1" class="block text-sm font-medium text-gray-700">Password</label>
+        {{ form.password1 }}
+      </div>
+
+      <!-- Confirm Password -->
+      <div>
+        <label for="id_password2" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+        {{ form.password2 }}
+      </div>
+
+      <!-- Register Button -->
       <button type="submit"
         class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
         Register

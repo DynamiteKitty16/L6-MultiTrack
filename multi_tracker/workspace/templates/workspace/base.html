@@ -19,7 +19,7 @@
                     <a href="/">Home</a>
                     <a href="/dashboard/">Dashboard</a>
                     <a href="/logout/">Logout</a>
-                {% else %}
+                {% elif request.resolver_match.url_name != "register" %}
                     <a href="/login/">Login</a>
                 {% endif %}
             </nav>

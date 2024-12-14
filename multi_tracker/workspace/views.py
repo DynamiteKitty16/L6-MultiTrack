@@ -2,9 +2,11 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
+from django.contrib.auth import login
 from django.contrib import messages
 from django.http import JsonResponse
 from django.utils.timezone import now
+from django.conf import settings
 from django.db.models import Case, When, Value, IntegerField, Count
 from datetime import datetime, timedelta
 from collections import Counter
@@ -32,14 +34,14 @@ def register(request):
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            user.backend = 'django.contrib.auth.backends.ModelBackend'  # Set default backend
+            # Set default backend explicitly
+            user.backend = settings.AUTHENTICATION_BACKENDS[0]  
             login(request, user)
             return redirect('dashboard')  # Redirect to the user dashboard
-        else:
-            return render(request, 'workspace/register.html', {'form': form})
     else:
         form = CustomUserCreationForm()
 
+    # Pass the form to the template
     return render(request, 'workspace/register.html', {'form': form})
 
 

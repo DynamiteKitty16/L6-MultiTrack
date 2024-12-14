@@ -1,3 +1,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom styles for input fields */
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  @apply border border-gray-300 p-2 rounded-md w-full bg-white; /* Tailwind classes */
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+  @apply outline-none border-indigo-500 ring-2 ring-indigo-300; /* Tailwind classes for focus state */
+}

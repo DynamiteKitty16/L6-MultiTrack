@@ -1,5 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
 from django.utils.timezone import now
 from .models import AttendanceRecord, LeaveRequest, UserProfile
@@ -8,17 +9,30 @@ from django.contrib.auth.forms import UserCreationForm
 from django.utils.timezone import now
 
 
-# Regex validator for names (example for stricter naming)
-from django.core.validators import RegexValidator
+# Validator for names
 name_regex = RegexValidator(r'^[A-Z][a-zA-Z\s]*$', 'Names must start with a capital letter and can only contain letters and spaces.')
 
+# Create User
 class CustomUserCreationForm(UserCreationForm):
     """
-    Form for user registration with custom fields and validations.
+    Custom form for user registration with email as the primary identifier and validations.
     """
-    first_name = forms.CharField(max_length=30, validators=[name_regex], required=True, help_text="Enter your first name.")
-    last_name = forms.CharField(max_length=30, validators=[name_regex], required=True, help_text="Enter your last name.")
-    email = forms.EmailField(required=True, help_text="Enter a valid email address.")
+    first_name = forms.CharField(
+        max_length=30, 
+        validators=[name_regex], 
+        required=True, 
+        help_text="Enter your first name."
+    )
+    last_name = forms.CharField(
+        max_length=30, 
+        validators=[name_regex], 
+        required=True, 
+        help_text="Enter your last name."
+    )
+    email = forms.EmailField(
+        required=True, 
+        help_text="Enter a valid email address. This will be used to log in."
+    )
 
     class Meta:
         model = User
@@ -34,37 +48,54 @@ class CustomUserCreationForm(UserCreationForm):
 
     def clean_email(self):
         """
-        Ensures that the email is unique.
+        Validates that the email is unique across all users.
         """
         email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
-            raise ValidationError("This email is already in use. Please use a different email address.")
+        if email:  # Ensure email is not None
+            email = email.lower()  # Normalize to lowercase
+            if User.objects.filter(email=email).exists():
+                self.add_error('email', "This email is already registered. Please use a different email address.")
+        else:
+            self.add_error('email', "Please enter a valid email address.")
         return email
+
 
     def save(self, commit=True):
         """
-        Auto-generates username based on first and last name to ensure uniqueness.
+        Overridden save method to set email as the username.
+        Ensures uniqueness and assigns additional fields.
         """
         user = super().save(commit=False)
-        first_name = self.cleaned_data.get('first_name')
-        last_name = self.cleaned_data.get('last_name')
+        email = self.cleaned_data.get('email')
 
-        base_username = f"{first_name}.{last_name}".lower()
-        username = base_username
-        counter = 1
-
-        while User.objects.filter(username=username).exists():
-            username = f"{base_username}{counter}"
-            counter += 1
-
-        user.username = username
-        user.first_name = first_name
-        user.last_name = last_name
-        user.email = self.cleaned_data.get('email')
+        if email:  # Ensure email is not None
+            email = email.lower()  # Normalize to lowercase
+            user.email = email
+            user.username = email  # Use normalized email as the username
+        user.first_name = self.cleaned_data.get('first_name')
+        user.last_name = self.cleaned_data.get('last_name')
 
         if commit:
             user.save()
         return user
+    
+    
+    def clean(self):
+        """
+        Validates passwords and ensures the form fields are consistent.
+        """
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+
+        # Password matching validation
+        if password1 and password2 and password1 != password2:
+            self.add_error('password1', "The passwords do not match. Please ensure both fields are identical.")
+
+        # Ensure email uniqueness
+        self.clean_email()
+
+        return cleaned_data
 
 
 class LeaveRequestForm(forms.ModelForm):
