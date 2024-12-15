@@ -4,10 +4,16 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
 from django.contrib.auth import login
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.utils.timezone import now
 from django.conf import settings
 from django.db.models import Case, When, Value, IntegerField, Count
+from django.urls import reverse
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
+from django.contrib.auth.tokens import default_token_generator
 from datetime import datetime, timedelta
 from collections import Counter
 
@@ -24,25 +30,67 @@ def home(request):
     return render(request, 'workspace/landing.html', {"year": year})
 
 
-# Register View
+# Register View with Email Verification
 def register(request):
     """
-    User registration using the custom form.
-    Redirects to the dashboard upon successful registration.
+    Handles user registration and sends email verification link.
     """
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            # Set default backend explicitly
-            user.backend = settings.AUTHENTICATION_BACKENDS[0]  
-            login(request, user)
-            return redirect('dashboard')  # Redirect to the user dashboard
+            user = form.save(commit=False)
+            user.is_active = False  # Set user as inactive until email verification
+            user.save()
+
+            # Ensure UserProfile is created for the user
+            UserProfile.objects.get_or_create(user=user)
+
+            # Send verification email
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            verification_link = request.build_absolute_uri(
+                reverse('verify_email', kwargs={'uidb64': uid, 'token': token})
+            )
+
+            subject = 'Verify Your Email Address'
+            message = render_to_string('workspace/email_verification.html', {
+                'user': user,
+                'verification_link': verification_link,
+            })
+            send_mail(subject, message, settings.EMAIL_HOST_USER, [user.email])
+
+            messages.success(request, "Account created! Please check your email to verify your account.")
+            return redirect('home')
     else:
         form = CustomUserCreationForm()
 
-    # Pass the form to the template
     return render(request, 'workspace/register.html', {'form': form})
+
+
+# Email Verification View
+def verify_email(request, uidb64, token):
+    """
+    Verifies the user's email based on the token and activates the account.
+    """
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+
+        # Ensure UserProfile exists and mark email as verified
+        profile, created = UserProfile.objects.get_or_create(user=user)
+        profile.is_email_verified = True
+        profile.save()
+
+        messages.success(request, "Email verified! You can now log in.")
+        return redirect('login')
+    else:
+        return HttpResponse("Verification link is invalid or has expired.", status=400)
 
 
 # Login View
@@ -71,7 +119,6 @@ def dashboard(request):
     """
     today = now().date()
 
-    # Static reminders (e.g., bank holidays)
     reminders = [
         {"title": "Christmas Day", "date": datetime(2024, 12, 25).date()},
         {"title": "Boxing Day", "date": datetime(2024, 12, 26).date()},
@@ -81,20 +128,14 @@ def dashboard(request):
         {"title": "Early May Bank Holiday", "date": datetime(2025, 5, 5).date()},
     ]
 
-    # Separate past and upcoming reminders
     past_reminders = [r for r in reminders if r["date"] < today]
     upcoming_reminders = [r for r in reminders if r["date"] >= today]
 
-    # Attendance Summary
     attendance_records = AttendanceRecord.objects.filter(user=request.user).order_by('-date')[:5]
 
-    # Manager-specific leave requests
     leave_requests = []
     if hasattr(request.user, 'profile') and request.user.profile.is_manager:
-        leave_requests = LeaveRequest.objects.filter(
-            manager=request.user, 
-            status='P'
-        ).order_by('-start_date')
+        leave_requests = LeaveRequest.objects.filter(manager=request.user, status='P').order_by('-start_date')
 
     context = {
         "past_reminders": past_reminders,
@@ -136,7 +177,6 @@ def attendance_create(request):
         if form.is_valid():
             attendance = form.save(commit=False)
             attendance.user = request.user
-            attendance.tenant = request.user.profile.tenant
             attendance.save()
             return redirect('attendance_list')
     else:
@@ -185,10 +225,6 @@ def get_attendance_counts_for_month(user):
     """
     current_month = now().month
     current_year = now().year
-    records = AttendanceRecord.objects.filter(
-        user=user, 
-        date__year=current_year, 
-        date__month=current_month
-    )
+    records = AttendanceRecord.objects.filter(user=user, date__year=current_year, date__month=current_month)
     counts = Counter(record.type for record in records)
     return dict(counts)

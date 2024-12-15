@@ -9,11 +9,12 @@ from django.utils.timezone import now
 # UserProfile model without tenancy
 class UserProfile(models.Model):
     """
-    Represents additional user information, including roles and reporting hierarchy.
+    Represents additional user information, including roles, reporting hierarchy, and email verification status.
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     is_manager = models.BooleanField(default=False)  # Indicates if the user is a manager
     is_tenant_admin = models.BooleanField(default=False)  # Indicates if the user is a tenant admin
+    is_email_verified = models.BooleanField(default=False)  # Tracks email verification status
     manager = models.ForeignKey(
         'self', on_delete=models.SET_NULL, null=True, blank=True, related_name='managed_employees'
     )  # Reporting hierarchy
