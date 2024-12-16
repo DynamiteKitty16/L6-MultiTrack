@@ -1,0 +1,11 @@
+asgiref==3.8.1
+certifi==2024.12.14
+Django==5.1.2
+django-stubs==5.1.1
+django-stubs-ext==5.1.1
+mypy==1.13.0
+mypy-extensions==1.0.0
+python-decouple==3.8
+sqlparse==0.5.1
+types-PyYAML==6.0.12.20240917
+typing_extensions==4.12.2
