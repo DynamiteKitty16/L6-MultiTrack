@@ -13,7 +13,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
-    env:  # Global environment variables for this job
+    env:
       EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
       EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
 
@@ -32,13 +32,15 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run migrations
-        run: python manage.py migrate
+        run: |
+          cd multi_tracker  # Navigate to the directory
+          python manage.py migrate
 
       - name: Run tests
-        run: python manage.py test
+        run: |
+          cd multi_tracker  # Navigate to the directory
+          python manage.py test
 
       - name: Debug Email Configuration
-        env:
-          EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
         run: |
           echo "Testing EMAIL: $EMAIL_HOST_USER"
