@@ -3,8 +3,10 @@ certifi==2024.12.14
 Django==5.1.2
 django-stubs==5.1.1
 django-stubs-ext==5.1.1
+gunicorn==23.0.0
 mypy==1.13.0
 mypy-extensions==1.0.0
+packaging==24.2
 python-decouple==3.8
 sqlparse==0.5.1
 types-PyYAML==6.0.12.20240917
