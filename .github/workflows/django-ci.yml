@@ -38,5 +38,7 @@ jobs:
         run: python manage.py test
 
       - name: Debug Email Configuration
+        env:
+          EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
         run: |
           echo "Testing EMAIL: $EMAIL_HOST_USER"
