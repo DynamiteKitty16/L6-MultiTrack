@@ -13,9 +13,13 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
+from django.core.mail import get_connection, EmailMessage
 from django.contrib.auth.tokens import default_token_generator
 from datetime import datetime, timedelta
 from collections import Counter
+
+import ssl
+import certifi
 
 from .models import UserProfile, LeaveRequest, AttendanceRecord, User
 from .forms import CustomUserCreationForm, AttendanceRecordForm, LeaveRequestForm
@@ -45,7 +49,7 @@ def register(request):
             # Ensure UserProfile is created for the user
             UserProfile.objects.get_or_create(user=user)
 
-            # Send verification email
+            # Generate email verification link
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             verification_link = request.build_absolute_uri(
@@ -57,7 +61,27 @@ def register(request):
                 'user': user,
                 'verification_link': verification_link,
             })
-            send_mail(subject, message, settings.EMAIL_HOST_USER, [user.email])
+
+            # Use explicit SSL context for SMTP connection
+            secure_connection = get_connection(
+                host=settings.EMAIL_HOST,
+                port=settings.EMAIL_PORT,
+                username=settings.EMAIL_HOST_USER,
+                password=settings.EMAIL_HOST_PASSWORD,
+                use_tls=True,
+                ssl_context=ssl.create_default_context(cafile=certifi.where())
+            )
+
+            # Send the email using EmailMessage for better control
+            email = EmailMessage(
+                subject=subject,
+                body=message,
+                from_email=settings.EMAIL_HOST_USER,
+                to=[user.email],
+                connection=secure_connection,
+            )
+            email.content_subtype = "html"  # Ensure email is sent as HTML
+            email.send()
 
             messages.success(request, "Account created! Please check your email to verify your account.")
             return redirect('home')

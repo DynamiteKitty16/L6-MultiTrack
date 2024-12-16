@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Email Verification</title>
+</head>
+<body>
+    <h2>Welcome {{ user.username }}!</h2>
+    <p>
+        Please click the link below to verify your email address and activate your account:
+    </p>
+    <p>
+        <a href="{{ verification_link }}">{{ verification_link }}</a>
+    </p>
+    <p>
+        If you did not sign up for this account, you can safely ignore this email.
+    </p>
+</body>
+</html>

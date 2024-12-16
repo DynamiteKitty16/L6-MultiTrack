@@ -1,0 +1,30 @@
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    env:  # Global environment variables for this job
+      EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
+      EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run migrations
+        run: python manage.py migrate
+
+      - name: Run tests
+        run: python manage.py test
+
+      - name: Debug Email Configuration
+        run: echo "Testing EMAIL: $EMAIL_HOST_USER"

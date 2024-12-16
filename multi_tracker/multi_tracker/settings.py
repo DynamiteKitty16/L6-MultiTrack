@@ -31,6 +31,9 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 
+# Explicit SSL context to fix CERTIFICATE_VERIFY_FAILED
+EMAIL_SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
