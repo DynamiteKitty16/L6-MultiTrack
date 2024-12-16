@@ -1,3 +1,14 @@
+name: Django CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:  # Allows manual runs
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -27,4 +38,5 @@ jobs:
         run: python manage.py test
 
       - name: Debug Email Configuration
-        run: echo "Testing EMAIL: $EMAIL_HOST_USER"
+        run: |
+          echo "Testing EMAIL: $EMAIL_HOST_USER"
