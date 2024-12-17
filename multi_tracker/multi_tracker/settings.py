@@ -1,8 +1,14 @@
 import os
 import ssl
 import certifi
+import dj_database_url
+
 from pathlib import Path
 from decouple import config, Csv
+
+from dotenv import load_dotenv
+
+load_dotenv() 
 
 # Load certificates for email sending
 ssl._create_default_https_context = ssl.create_default_context
@@ -26,6 +32,15 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', config('EMAIL_HOST_USER'))
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', config('EMAIL_HOST_PASSWORD'))
 
 EMAIL_SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
+
+# DATABASE CONFIGURATION
+DATABASES = {
+    'default': dj_database_url.config(
+        default=os.getenv('DATABASE_URL', 'sqlite:///db.sqlite3'),
+        conn_max_age=600,
+        ssl_require=True  # Ensures SSL for security
+    )
+}
 
 # APPLICATION DEFINITION
 INSTALLED_APPS = [
@@ -67,18 +82,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'multi_tracker.wsgi.application'
-
-# DATABASE CONFIGURATION
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('POSTGRES_DB'),
-        'USER': config('POSTGRES_USER'),
-        'PASSWORD': config('POSTGRES_PASSWORD'),
-        'HOST': config('POSTGRES_HOST'),
-        'PORT': config('POSTGRES_PORT', default=5432),
-    }
-}
 
 # PASSWORD VALIDATION
 AUTH_PASSWORD_VALIDATORS = [
