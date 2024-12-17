@@ -71,12 +71,12 @@ WSGI_APPLICATION = 'multi_tracker.wsgi.application'
 # DATABASE CONFIGURATION
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql' if not DEBUG else 'django.db.backends.sqlite3',
-        'NAME': config('POSTGRES_DB', default=BASE_DIR / 'db.sqlite3'),
-        'USER': config('POSTGRES_USER', default=''),
-        'PASSWORD': config('POSTGRES_PASSWORD', default=''),
-        'HOST': config('POSTGRES_HOST', default='127.0.0.1'),
-        'PORT': config('POSTGRES_PORT', default=5432, cast=int),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': str(os.getenv('POSTGRES_DB', config('POSTGRES_DB'))),  # Ensure string
+        'USER': os.getenv('POSTGRES_USER', config('POSTGRES_USER')),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', config('POSTGRES_PASSWORD')),
+        'HOST': os.getenv('POSTGRES_HOST', config('POSTGRES_HOST', default='localhost')),
+        'PORT': os.getenv('POSTGRES_PORT', default=5432),
     }
 }
 
