@@ -32,6 +32,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r multi_tracker/requirements.txt
 
+      - name: Install Node.js and Tailwind CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Node dependencies
+        run: |
+          cd multi_tracker
+          npm install  # Install Node modules (if package.json exists)
+
+      - name: Build Tailwind CSS
+        run: |
+          cd multi_tracker
+          npx tailwindcss -i ./static/src/input.css -o ./static/css/output.css --minify
+
       - name: Set environment variables
         run: |
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
@@ -42,6 +57,11 @@ jobs:
         run: |
           cd multi_tracker
           python manage.py migrate
+
+      - name: Collect static files
+        run: |
+          cd multi_tracker
+          python manage.py collectstatic --noinput
 
       - name: Run tests
         run: |
