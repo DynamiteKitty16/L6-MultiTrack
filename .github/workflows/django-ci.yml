@@ -3,10 +3,10 @@ name: Django CI/CD
 on:
   push:
     branches:
-      - main
+      - '**'  # Run Actions on all branches
   pull_request:
     branches:
-      - main
+      - main  # Still check PRs targeting main
   workflow_dispatch:  # Allows manual runs
 
 jobs:
