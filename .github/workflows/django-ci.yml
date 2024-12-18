@@ -40,12 +40,12 @@ jobs:
       - name: Install Node dependencies
         run: |
           cd multi_tracker
-          npm install  # Install Node modules (if package.json exists)
+          npm install  # Ensure you have package.json present
 
       - name: Build Tailwind CSS
         run: |
           cd multi_tracker
-          npx tailwindcss -i ./static/src/input.css -o ./static/css/output.css --minify
+          npx tailwindcss -i workspace/static/css/input.css -o workspace/static/css/output.css --minify
 
       - name: Set environment variables
         run: |
