@@ -3,10 +3,10 @@ name: Django CI/CD
 on:
   push:
     branches:
-      - main
+      - '**'  # Run Actions on all branches
   pull_request:
     branches:
-      - main
+      - main  # Still check PRs targeting main
   workflow_dispatch:  # Allows manual runs
 
 jobs:
@@ -40,12 +40,12 @@ jobs:
       - name: Install Node dependencies
         run: |
           cd multi_tracker
-          npm install  # Ensure you have package.json present
+          npm install  # Ensure you have package.json in your repo
 
       - name: Build Tailwind CSS
         run: |
           cd multi_tracker
-          npx tailwindcss -i workspace/static/css/input.css -o workspace/static/css/output.css --minify
+          npx tailwindcss -i workspace/static/css/tailwind.css -o workspace/static/css/output.css --minify
 
       - name: Set environment variables
         run: |
