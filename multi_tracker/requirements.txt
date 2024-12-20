@@ -1,5 +1,6 @@
 asgiref==3.8.1
 certifi==2024.12.14
+dj-database-url==2.3.0
 Django==5.1.2
 django-stubs==5.1.1
 django-stubs-ext==5.1.1
@@ -7,11 +8,9 @@ gunicorn==23.0.0
 mypy==1.13.0
 mypy-extensions==1.0.0
 packaging==24.2
+psycopg2-binary==2.9.9
 python-decouple==3.8
+python-dotenv==1.0.1
 sqlparse==0.5.1
 types-PyYAML==6.0.12.20240917
 typing_extensions==4.12.2
-psycopg2-binary==2.9.9
-dj-database-url==2.3.0
-python-dotenv==1.0.0
-whitenoise==6.4.0
