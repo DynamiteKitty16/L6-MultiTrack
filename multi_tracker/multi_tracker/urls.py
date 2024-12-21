@@ -9,6 +9,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/login/', LoginView.as_view(template_name='workspace/login.html'), name='login'),  # Custom LoginView
     path('accounts/', include('django.contrib.auth.urls')),
+    path('logout/', views.custom_logout, name='logout'),
+
     
     # Custom URLs
     path('', views.home, name='home'),

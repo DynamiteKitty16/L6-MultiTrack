@@ -38,6 +38,13 @@ DATABASES = {
     )
 }
 
+# Session Security Settings
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'  # Signed cookies for added security
+SESSION_COOKIE_AGE = 180  # Set session timeout (180 = 3 mins || 1800 = 30 mins)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Clear session on browser close
+SESSION_COOKIE_SECURE = not DEBUG  # Use secure cookies in production
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookies
+
 # Application Definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -53,9 +60,12 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'workspace.middleware.SessionTimeoutMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'UpdateLastActivityMiddleware',
+    'SessionTimeoutMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
