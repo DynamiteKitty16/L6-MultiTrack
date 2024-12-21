@@ -1,5 +1,8 @@
 from datetime import datetime
 from django.contrib.auth import logout
+from django.shortcuts import redirect
+from django.contrib.auth.signals import user_logged_in
+from django.dispatch import receiver
 
 class UpdateLastActivityMiddleware:
     """
@@ -10,9 +13,9 @@ class UpdateLastActivityMiddleware:
 
     def __call__(self, request):
         if request.user.is_authenticated:
-            # Update session with the user's last activity timestamp
             request.session['last_activity'] = datetime.now().timestamp()
         return self.get_response(request)
+
 
 class SessionTimeoutMiddleware:
     """
@@ -23,11 +26,17 @@ class SessionTimeoutMiddleware:
 
     def __call__(self, request):
         if request.user.is_authenticated:
-            # Get the last activity timestamp from the session
             last_activity = request.session.get('last_activity', datetime.now().timestamp())
-            # Calculate the time elapsed since the last activity
             time_elapsed = datetime.now().timestamp() - last_activity
-            # If the time elapsed exceeds the session timeout, log out the user
             if time_elapsed > 180:  # Timeout set to 3 minutes
                 logout(request)
+                return redirect('login')  # Redirect to login page
         return self.get_response(request)
+
+
+@receiver(user_logged_in)
+def set_last_activity(sender, request, user, **kwargs):
+    """
+    Signal to set the initial last_activity timestamp on user login.
+    """
+    request.session['last_activity'] = datetime.now().timestamp()
