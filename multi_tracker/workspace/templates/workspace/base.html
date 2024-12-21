@@ -29,5 +29,23 @@
     <footer>
         <p>&copy; 2024 MultiTracker</p>
     </footer>
+
+    {% if user.is_authenticated %}
+        <script>
+            // Get session expiry time from Django (in seconds) and convert it to a number
+            const sessionTimeout = parseInt("{{ session_expiry }}");
+            const warningTime = sessionTimeout - 30; // Warn user 30 seconds before session expires
+
+            // Notify the user before session timeout
+            setTimeout(() => {
+                alert("You will be logged out due to inactivity in 30 seconds. Please save your work.");
+            }, warningTime * 1000);
+
+            // Automatically log the user out when the session expires
+            setTimeout(() => {
+                window.location.href = "{% url 'custom_logout' %}";
+            }, sessionTimeout * 1000);
+        </script>
+    {% endif %}
 </body>
 </html>

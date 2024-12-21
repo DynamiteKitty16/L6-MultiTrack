@@ -8,10 +8,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Load certificates for email sending
-ssl._create_default_https_context = ssl.create_default_context
-ssl._create_default_https_context().load_verify_locations(certifi.where())
-
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -34,16 +30,16 @@ DATABASES = {
     'default': dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
         conn_max_age=600,
-        ssl_require=True  # Ensures secure PostgreSQL connections
+        ssl_require=False  # Disable SSL for local SQLite
     )
 }
 
 # Session Security Settings
-SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'  # Signed cookies for added security
-SESSION_COOKIE_AGE = 180  # Set session timeout (180 = 3 mins || 1800 = 30 mins)
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Clear session on browser close
-SESSION_COOKIE_SECURE = not DEBUG  # Use secure cookies in production
-SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookies
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+SESSION_COOKIE_AGE = 180  # 3 minutes
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
 
 # Application Definition
 INSTALLED_APPS = [
@@ -56,7 +52,6 @@ INSTALLED_APPS = [
     'workspace',
 ]
 
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -64,13 +59,11 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'workspace.middleware.SessionTimeoutMiddleware',
-    'workspace.middleware.UpdateLastActivityMiddleware',
+    'workspace.middleware.SessionTimeoutMiddleware',  # Handles timeout
+    'workspace.middleware.UpdateLastActivityMiddleware',  # Tracks user activity
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-
 
 ROOT_URLCONF = 'multi_tracker.urls'
 
@@ -85,6 +78,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'workspace.context_processors.session_expiry',
             ],
         },
     },
@@ -112,17 +106,17 @@ USE_TZ = True
 
 # Static and Media Files
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'workspace', 'static')
+STATIC_ROOT = BASE_DIR / 'workspace' / 'static'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default Primary Key Field Type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Authentication
-LOGIN_URL = '/login/'
+LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
 
