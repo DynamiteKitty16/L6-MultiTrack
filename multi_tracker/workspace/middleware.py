@@ -15,7 +15,6 @@ class UpdateLastActivityMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Skip updating for static files or unauthenticated users
         if request.user.is_authenticated and not request.path.startswith(('/static/', '/logout/')):
             request.session['last_activity'] = now().timestamp()  # Use timezone-aware now
         return self.get_response(request)
@@ -32,7 +31,7 @@ class SessionTimeoutMiddleware:
         if request.user.is_authenticated:
             last_activity = request.session.get('last_activity')
             if last_activity:
-                # Convert the timestamp to a timezone-aware datetime object
+                # Convert the timestamp to an aware datetime object
                 last_activity_time = now().fromtimestamp(last_activity)
 
                 # Check if the timeout period has passed
