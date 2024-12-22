@@ -6,10 +6,13 @@ from workspace import views
 from django.contrib.auth.views import LoginView
 
 urlpatterns = [
+    # Admin URL
     path('admin/', admin.site.urls),
+    
+    # Authentication URLs
     path('accounts/login/', LoginView.as_view(template_name='workspace/login.html'), name='login'),
+    path('accounts/logout/', views.custom_logout, name='custom_logout'),
     path('accounts/', include('django.contrib.auth.urls')),
-    path('logout/', views.custom_logout, name='logout'),
 
     # Custom URLs
     path('', views.home, name='home'),
