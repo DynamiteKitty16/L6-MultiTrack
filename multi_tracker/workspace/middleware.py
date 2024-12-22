@@ -1,7 +1,7 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from django.contrib.auth import logout
 from django.shortcuts import redirect
-from django.utils.timezone import now
+from django.utils.timezone import now, make_aware
 from django.conf import settings
 from django.dispatch import receiver
 from django.contrib.auth.signals import user_logged_in
@@ -15,6 +15,7 @@ class UpdateLastActivityMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # Skip updating for static files or unauthenticated users
         if request.user.is_authenticated and not request.path.startswith(('/static/', '/logout/')):
             request.session['last_activity'] = now().timestamp()  # Use timezone-aware now
         return self.get_response(request)
@@ -31,19 +32,18 @@ class SessionTimeoutMiddleware:
         if request.user.is_authenticated:
             last_activity = request.session.get('last_activity')
             if last_activity:
-                # Convert the timestamp to an aware datetime object
-                last_activity_time = now().fromtimestamp(last_activity)
-
+                # Ensure last_activity is timezone-aware
+                last_activity_time = make_aware(datetime.fromtimestamp(last_activity))
+                
                 # Check if the timeout period has passed
                 if now() - last_activity_time > timedelta(seconds=settings.SESSION_COOKIE_AGE):
                     logout(request)
-                    return redirect('login')  # Redirect to login page
+                    return redirect('login')
             else:
                 # Set initial last activity if not present
                 request.session['last_activity'] = now().timestamp()
 
-        response = self.get_response(request)
-        return response
+        return self.get_response(request)
 
 
 @receiver(user_logged_in)
