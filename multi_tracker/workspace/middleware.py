@@ -30,13 +30,15 @@ class SessionTimeoutMiddleware:
 
 class UpdateLastActivityMiddleware:
     """
-    Middleware to track user activity and update the session timestamp.
+    Middleware to update the 'last_activity' timestamp in the session for authenticated users.
     """
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
+        # Only update if the user is authenticated
         if request.user.is_authenticated:
-            request.session['last_activity'] = now()
+            # Store the current timestamp as an ISO string
+            request.session['last_activity'] = now().isoformat()
         return self.get_response(request)

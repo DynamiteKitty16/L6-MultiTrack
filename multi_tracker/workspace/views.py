@@ -134,16 +134,31 @@ def dashboard(request):
     """
     Simplified dashboard view to focus on user-specific data.
     """
-    attendance_records = AttendanceRecord.objects.filter(user=request.user).order_by('-date')[:5]
-    leave_requests = []
+    # Format attendance records for serialization
+    attendance_records = [
+        {
+            "date": record.date.strftime("%Y-%m-%d"),
+            "status": record.get_status_display() if hasattr(record, 'get_status_display') else record.status
+        }
+        for record in AttendanceRecord.objects.filter(user=request.user).order_by('-date')[:5]
+    ]
 
-    # If the user is a manager, show leave requests assigned to them
+    # Format leave requests for managers
+    leave_requests = []
     if hasattr(request.user, 'profile') and request.user.profile.is_manager:
-        leave_requests = LeaveRequest.objects.filter(manager=request.user, status='P').order_by('-start_date')
+        leave_requests = [
+            {
+                "user": leave.user.get_full_name(),
+                "start_date": leave.start_date.strftime("%Y-%m-%d"),
+                "end_date": leave.end_date.strftime("%Y-%m-%d"),
+                "status": leave.get_status_display() if hasattr(leave, 'get_status_display') else leave.status
+            }
+            for leave in LeaveRequest.objects.filter(manager=request.user, status='P').order_by('-start_date')
+        ]
 
     context = {
         "attendance_records": attendance_records,
-        "leave_requests": leave_requests,
+        "leave_requests": leave_requests
     }
 
     return render(request, 'workspace/dashboard.html', context)
