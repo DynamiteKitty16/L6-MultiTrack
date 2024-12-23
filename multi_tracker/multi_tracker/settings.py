@@ -35,11 +35,15 @@ DATABASES = {
 }
 
 # Session Security Settings
-SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
-SESSION_COOKIE_AGE = 900  # 15 minutes / 180 = 3 minutes
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_COOKIE_SECURE = not DEBUG
-SESSION_COOKIE_HTTPONLY = True
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Use database-backed sessions
+SESSION_COOKIE_AGE = 1200  # 20 minutes to account for network delay on reauthenticate
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Expire session when browser closes
+SESSION_COOKIE_SECURE = not DEBUG  # Secure cookies only in production
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookies
+
+# Custom Session Timeout for Middleware
+SESSION_TIMEOUT = 900  # 15 minutes
+
 
 # Application Definition
 INSTALLED_APPS = [

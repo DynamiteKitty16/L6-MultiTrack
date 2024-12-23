@@ -116,15 +116,16 @@ def custom_logout(request):
     return redirect('login')
 
 
-# Session Timeout Warning View
+# Handling timeout
 @login_required
 def session_timeout_warning(request):
     """
-    View to handle session timeout warning and refresh the session.
+    Refresh session when the user confirms staying logged in.
     """
     if request.method == "GET":
         request.session.modified = True
         return JsonResponse({"message": "Session refreshed successfully."})
+    return JsonResponse({"error": "Invalid request method."}, status=400)
 
 
 # Dashboard View
