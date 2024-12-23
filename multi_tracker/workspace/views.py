@@ -130,30 +130,19 @@ def session_timeout_warning(request):
 
 # Dashboard View
 @login_required
+@login_required
 def dashboard(request):
-    today = now().date()
-
-    reminders = [
-        {"title": "Christmas Day", "date": datetime(2024, 12, 25).date()},
-        {"title": "Boxing Day", "date": datetime(2024, 12, 26).date()},
-        {"title": "New Year's Day", "date": datetime(2025, 1, 1).date()},
-        {"title": "Good Friday", "date": datetime(2025, 4, 18).date()},
-        {"title": "Easter Monday", "date": datetime(2025, 4, 21).date()},
-        {"title": "Early May Bank Holiday", "date": datetime(2025, 5, 5).date()},
-    ]
-
-    past_reminders = [r for r in reminders if r["date"] < today]
-    upcoming_reminders = [r for r in reminders if r["date"] >= today]
-
+    """
+    Simplified dashboard view to focus on user-specific data.
+    """
     attendance_records = AttendanceRecord.objects.filter(user=request.user).order_by('-date')[:5]
-
     leave_requests = []
+
+    # If the user is a manager, show leave requests assigned to them
     if hasattr(request.user, 'profile') and request.user.profile.is_manager:
         leave_requests = LeaveRequest.objects.filter(manager=request.user, status='P').order_by('-start_date')
 
     context = {
-        "past_reminders": past_reminders,
-        "upcoming_reminders": upcoming_reminders,
         "attendance_records": attendance_records,
         "leave_requests": leave_requests,
     }
