@@ -130,7 +130,6 @@ def session_timeout_warning(request):
 
 # Dashboard View
 @login_required
-@login_required
 def dashboard(request):
     """
     Simplified dashboard view to focus on user-specific data.
