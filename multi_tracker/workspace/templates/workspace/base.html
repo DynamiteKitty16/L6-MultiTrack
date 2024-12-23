@@ -22,7 +22,7 @@
                 <a href="/logout/">Logout</a>
             {% endif %}
         </nav>
-    </header>    
+    </header>
     <main>
         {% block content %}{% endblock %}
     </main>
@@ -32,17 +32,32 @@
 
     {% if user.is_authenticated %}
         <script>
-            // Get session expiry time from Django (in seconds) and convert it to a number
-            const sessionTimeout = parseInt("{{ session_expiry }}");
-            const warningTime = sessionTimeout - 30; // Warn user 30 seconds before session expires
+            // Session timeout in seconds (set dynamically by Django)
+            const sessionTimeout = 900; // 15 minutes in seconds
+            const warningTime = sessionTimeout - 60; // Show warning 1 minute before timeout
 
-            // Notify the user before session timeout
-            setTimeout(() => {
-                alert("You will be logged out due to inactivity in 30 seconds. Please save your work.");
+            // Timer for showing the logout warning
+            const warningTimer = setTimeout(() => {
+                const stayLoggedIn = confirm(
+                    "You will be logged out due to inactivity in 1 minute. Click OK to stay logged in."
+                );
+                if (stayLoggedIn) {
+                    // Make an AJAX call to refresh the session
+                    fetch("{% url 'session_timeout_warning' %}", { method: "GET", credentials: "same-origin" })
+                        .then(response => {
+                            if (response.ok) {
+                                alert("Session refreshed successfully!");
+                                window.location.reload(); // Reload the page to reset timers
+                            } else {
+                                alert("Unable to refresh session. Please log back in.");
+                            }
+                        })
+                        .catch(() => alert("Failed to refresh session. Please log back in."));
+                }
             }, warningTime * 1000);
 
-            // Automatically log the user out when the session expires
-            setTimeout(() => {
+            // Timer for automatic logout
+            const logoutTimer = setTimeout(() => {
                 window.location.href = "{% url 'custom_logout' %}";
             }, sessionTimeout * 1000);
         </script>

@@ -30,8 +30,9 @@ def home(request):
     """
     Public landing page with the current year.
     """
-    year = datetime.now().year
-    return render(request, 'workspace/landing.html', {"year": year})
+    if request.user.is_authenticated:
+        return redirect('dashboard')  # Redirect logged-in users to the dashboard
+    return render(request, 'workspace/landing.html', {"year": datetime.now().year})
 
 
 # Register View with Email Verification
@@ -129,10 +130,11 @@ class CustomLoginView(LoginView):
 @login_required
 def custom_logout(request):
     """
-    Logs out the user and redirects to the home page.
+    Logs out the user and redirects to the login page.
     """
     logout(request)
-    return redirect('home')
+    request.session.flush()  # Clear all session data
+    return redirect('login')
 
 
 # Dashboard View

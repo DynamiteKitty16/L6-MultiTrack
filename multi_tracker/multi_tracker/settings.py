@@ -36,7 +36,7 @@ DATABASES = {
 
 # Session Security Settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
-SESSION_COOKIE_AGE = 180  # 3 minutes
+SESSION_COOKIE_AGE = 900  # 15 minutes / 180 = 3 minutes
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
