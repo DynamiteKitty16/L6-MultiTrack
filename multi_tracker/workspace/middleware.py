@@ -2,6 +2,7 @@ from datetime import timedelta
 from django.utils.timezone import now
 from django.conf import settings
 
+
 class SessionTimeoutMiddleware:
     """
     Middleware to enforce session timeouts for authenticated users.
@@ -24,4 +25,18 @@ class SessionTimeoutMiddleware:
             else:
                 # Update last activity
                 request.session['last_activity'] = now()
+        return self.get_response(request)
+
+
+class UpdateLastActivityMiddleware:
+    """
+    Middleware to track user activity and update the session timestamp.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.user.is_authenticated:
+            request.session['last_activity'] = now()
         return self.get_response(request)
