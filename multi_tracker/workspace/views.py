@@ -12,7 +12,6 @@ from django.urls import reverse
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.template.loader import render_to_string
-from django.core.mail import send_mail
 from django.core.mail import get_connection, EmailMessage
 from django.contrib.auth.tokens import default_token_generator
 from datetime import datetime, timedelta
@@ -27,19 +26,13 @@ from .forms import CustomUserCreationForm, AttendanceRecordForm, LeaveRequestFor
 
 # Home View
 def home(request):
-    """
-    Public landing page with the current year.
-    """
     if request.user.is_authenticated:
-        return redirect('dashboard')  # Redirect logged-in users to the dashboard
+        return redirect('dashboard')
     return render(request, 'workspace/landing.html', {"year": datetime.now().year})
 
 
 # Register View with Email Verification
 def register(request):
-    """
-    Handles user registration and sends email verification link.
-    """
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
@@ -47,10 +40,8 @@ def register(request):
             user.is_active = False  # Set user as inactive until email verification
             user.save()
 
-            # Ensure UserProfile is created for the user
             UserProfile.objects.get_or_create(user=user)
 
-            # Generate email verification link
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             verification_link = request.build_absolute_uri(
@@ -63,7 +54,6 @@ def register(request):
                 'verification_link': verification_link,
             })
 
-            # Use explicit SSL context for SMTP connection
             secure_connection = get_connection(
                 host=settings.EMAIL_HOST,
                 port=settings.EMAIL_PORT,
@@ -73,7 +63,6 @@ def register(request):
                 ssl_context=ssl.create_default_context(cafile=certifi.where())
             )
 
-            # Send the email using EmailMessage for better control
             email = EmailMessage(
                 subject=subject,
                 body=message,
@@ -81,7 +70,7 @@ def register(request):
                 to=[user.email],
                 connection=secure_connection,
             )
-            email.content_subtype = "html"  # Ensure email is sent as HTML
+            email.content_subtype = "html"
             email.send()
 
             messages.success(request, "Account created! Please check your email to verify your account.")
@@ -94,9 +83,6 @@ def register(request):
 
 # Email Verification View
 def verify_email(request, uidb64, token):
-    """
-    Verifies the user's email based on the token and activates the account.
-    """
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)
@@ -107,7 +93,6 @@ def verify_email(request, uidb64, token):
         user.is_active = True
         user.save()
 
-        # Ensure UserProfile exists and mark email as verified
         profile, created = UserProfile.objects.get_or_create(user=user)
         profile.is_email_verified = True
         profile.save()
@@ -120,29 +105,31 @@ def verify_email(request, uidb64, token):
 
 # Login View
 class CustomLoginView(LoginView):
-    """
-    Custom login view with a tailored template.
-    """
     template_name = 'workspace/login.html'
 
 
 # Logout View
 @login_required
 def custom_logout(request):
-    """
-    Logs out the user and redirects to the login page.
-    """
     logout(request)
-    request.session.flush()  # Clear all session data
+    request.session.flush()
     return redirect('login')
+
+
+# Session Timeout Warning View
+@login_required
+def session_timeout_warning(request):
+    """
+    View to handle session timeout warning and refresh the session.
+    """
+    if request.method == "GET":
+        request.session.modified = True
+        return JsonResponse({"message": "Session refreshed successfully."})
 
 
 # Dashboard View
 @login_required
 def dashboard(request):
-    """
-    User dashboard displaying reminders, attendance summaries, and leave requests for managers.
-    """
     today = now().date()
 
     reminders = [
@@ -176,9 +163,6 @@ def dashboard(request):
 # Leave Request List View
 @login_required
 def leave_request_list(request):
-    """
-    Displays leave requests for the logged-in user.
-    """
     leave_requests = LeaveRequest.objects.filter(user=request.user).order_by('-start_date')
     return render(request, 'workspace/leave_request_list.html', {'leave_requests': leave_requests})
 
@@ -186,18 +170,12 @@ def leave_request_list(request):
 # Attendance Record Views
 @login_required
 def attendance_list(request):
-    """
-    Displays a list of attendance records for the logged-in user.
-    """
     records = AttendanceRecord.objects.filter(user=request.user).order_by('-date')
     return render(request, 'workspace/attendance_list.html', {'records': records})
 
 
 @login_required
 def attendance_create(request):
-    """
-    Handles the creation of attendance records.
-    """
     if request.method == 'POST':
         form = AttendanceRecordForm(request.POST)
         if form.is_valid():
@@ -213,9 +191,6 @@ def attendance_create(request):
 
 @login_required
 def attendance_delete(request, pk):
-    """
-    Deletes an attendance record.
-    """
     record = get_object_or_404(AttendanceRecord, pk=pk, user=request.user)
     record.delete()
     return redirect('attendance_list')
@@ -224,9 +199,6 @@ def attendance_delete(request, pk):
 # Leave Request Approval for Managers
 @login_required
 def approve_leave(request, leave_id):
-    """
-    Approves a leave request by a manager.
-    """
     leave = get_object_or_404(LeaveRequest, id=leave_id, manager=request.user)
     leave.status = 'A'
     leave.save()
@@ -235,9 +207,6 @@ def approve_leave(request, leave_id):
 
 @login_required
 def reject_leave(request, leave_id):
-    """
-    Rejects a leave request by a manager.
-    """
     leave = get_object_or_404(LeaveRequest, id=leave_id, manager=request.user)
     leave.status = 'R'
     leave.save()
@@ -246,9 +215,6 @@ def reject_leave(request, leave_id):
 
 # Attendance Summary (Utility)
 def get_attendance_counts_for_month(user):
-    """
-    Counts attendance records for the current month.
-    """
     current_month = now().month
     current_year = now().year
     records = AttendanceRecord.objects.filter(user=user, date__year=current_year, date__month=current_month)

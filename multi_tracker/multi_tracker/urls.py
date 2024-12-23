@@ -22,4 +22,7 @@ urlpatterns = [
     path('leave-requests/', views.leave_request_list, name='leave_requests'),
     path('leave/approve/<int:leave_id>/', views.approve_leave, name='approve_leave'),
     path('leave/reject/<int:leave_id>/', views.reject_leave, name='reject_leave'),
+
+    # Functions
+    path('session_timeout_warning/', views.session_timeout_warning, name='session_timeout_warning'),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
