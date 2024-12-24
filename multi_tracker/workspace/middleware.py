@@ -1,6 +1,7 @@
-from datetime import timedelta
+from datetime import datetime
 from django.utils.timezone import now
 from django.conf import settings
+from django.contrib.auth import logout
 
 
 class SessionTimeoutMiddleware:
@@ -14,17 +15,31 @@ class SessionTimeoutMiddleware:
     def __call__(self, request):
         # Check if the user is authenticated
         if request.user.is_authenticated:
-            # Get the last activity timestamp
-            last_activity = request.session.get('last_activity', now())
+            # Get the last activity timestamp from the session
+            last_activity = request.session.get('last_activity')
+            
+            # Timeout period in seconds (default to 15 minutes = 900 seconds)
+            timeout = getattr(settings, 'SESSION_TIMEOUT', 900)
 
-            # Timeout period in seconds (15 minutes = 900 seconds)
-            timeout = getattr(settings, 'SESSION_TIMEOUT', 900)  # Default to 15 minutes
-            if (now() - last_activity).total_seconds() > timeout:
-                from django.contrib.auth import logout
-                logout(request)  # Log the user out
-            else:
-                # Update last activity
-                request.session['last_activity'] = now()
+            if last_activity:
+                try:
+                    # Convert ISO string back to datetime object
+                    last_activity = datetime.fromisoformat(last_activity)
+                except ValueError:
+                    # If deserialization fails, log out the user
+                    logout(request)
+                    request.session.flush()
+                    return self.get_response(request)
+
+                # Check if the session has timed out
+                if (now() - last_activity).total_seconds() > timeout:
+                    logout(request)  # Log out the user
+                    request.session.flush()  # Clear the session
+                    return self.get_response(request)
+
+            # Update the last activity timestamp in the session
+            request.session['last_activity'] = now().isoformat()
+
         return self.get_response(request)
 
 
