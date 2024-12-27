@@ -33,9 +33,34 @@
         <p>&copy; 2024 MultiTracker</p>
     </footer>
 
+
     <!-- Include timeout handling if the user is authenticated -->
     {% if user.is_authenticated %}
-        <script src="{% static 'js/timeout_warning.js' %}"></script>
+        <script>
+            const sessionTimeout = {{ request.session.get_expiry_age }}; // Total session expiry time in seconds
+            const warningTime = sessionTimeout - 60; // Show warning 1 minute before timeout
+
+            // Function to show a warning modal
+            function showSessionWarning() {
+                if (confirm("Your session is about to expire. Do you want to stay logged in?")) {
+                    // Refresh session
+                    fetch("{% url 'session_timeout_warning' %}")
+                        .then(response => {
+                            if (response.ok) {
+                                alert("Your session has been refreshed.");
+                            } else {
+                                alert("Failed to refresh session. Please log in again.");
+                            }
+                        })
+                        .catch(error => console.error("Error refreshing session:", error));
+                }
+            }
+
+            // Schedule the warning to appear
+            setTimeout(() => {
+                showSessionWarning();
+            }, warningTime * 1000); // Convert seconds to milliseconds
+        </script>
     {% endif %}
 </body>
 </html>
