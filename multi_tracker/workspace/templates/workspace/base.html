@@ -51,6 +51,7 @@
     </div>
 
     <script>
+        // Function to retrieve CSRF token from cookies
         function getCSRFToken() {
             const cookies = document.cookie.split(';');
             for (let cookie of cookies) {
@@ -62,30 +63,36 @@
             return '';
         }
 
+        // Function to show the session warning modal
         function showSessionWarning() {
-            // Show the Tailwind modal
             document.getElementById('sessionTimeoutModal').classList.remove('hidden');
         }
 
+        // Function to check session timeout status
         function checkSessionTimeout() {
             fetch('/session_timeout_warning/')
                 .then(response => response.json())
                 .then(data => {
                     if (data.time_left <= 0) {
+                        // Session expired, redirect to login
                         window.location.href = '/accounts/login/';
-                    } else if (data.time_left <= 300) { // Show warning 5 minutes before expiry
+                    } else if (data.time_left <= 300) { // Show warning 5 minutes before session expires
                         showSessionWarning();
                     }
                 })
-                .catch(() => window.location.href = '/accounts/login/');
+                .catch(() => {
+                    // Redirect to login if an error occurs
+                    window.location.href = '/accounts/login/';
+                });
         }
 
-        // Check session timeout every minute
-        setInterval(checkSessionTimeout, 60000);
+        // Periodically check the session timeout status
+        setInterval(checkSessionTimeout, 60000); // Check every minute
 
-        // Handle Stay Logged In button click
+        // Handle "Stay Logged In" button click
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('stayLoggedInBtn').addEventListener('click', () => {
+            const stayLoggedInBtn = document.getElementById('stayLoggedInBtn');
+            stayLoggedInBtn.addEventListener('click', () => {
                 fetch('/extend_session/', {
                     method: 'POST',
                     headers: {
@@ -94,12 +101,16 @@
                 })
                 .then(response => {
                     if (response.ok) {
+                        // Hide the modal upon successful session refresh
                         document.getElementById('sessionTimeoutModal').classList.add('hidden');
                     } else {
                         throw new Error('Failed to extend session');
                     }
                 })
-                .catch(() => window.location.href = '/accounts/login/');
+                .catch(() => {
+                    // Redirect to login if session refresh fails
+                    window.location.href = '/accounts/login/';
+                });
             });
         });
     </script>
