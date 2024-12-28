@@ -37,9 +37,8 @@
         <p>&copy; 2024 MultiTracker</p>
     </footer>
 
-    <!-- Include timeout handling if the user is authenticated -->
+    <!-- Session Timeout Modal -->
     {% if user.is_authenticated %}
-    <!-- Tailwind Session Timeout Modal -->
     <div id="sessionTimeoutModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
         <div class="bg-white rounded-lg shadow-lg p-6">
             <h5 class="text-lg font-bold mb-4">Session Timeout Warning</h5>
@@ -51,7 +50,7 @@
     </div>
 
     <script>
-        // Function to retrieve CSRF token from cookies
+        // Function to get the CSRF token
         function getCSRFToken() {
             const cookies = document.cookie.split(';');
             for (let cookie of cookies) {
@@ -65,31 +64,28 @@
 
         // Function to show the session warning modal
         function showSessionWarning() {
-            document.getElementById('sessionTimeoutModal').classList.remove('hidden');
+            const modal = document.getElementById('sessionTimeoutModal');
+            modal.classList.remove('hidden');
         }
 
-        // Function to check session timeout status
+        // Function to check session timeout
         function checkSessionTimeout() {
             fetch('/session_timeout_warning/')
                 .then(response => response.json())
                 .then(data => {
                     if (data.time_left <= 0) {
-                        // Session expired, redirect to login
                         window.location.href = '/accounts/login/';
-                    } else if (data.time_left <= 300) { // Show warning 5 minutes before session expires
+                    } else if (data.time_left <= 300) { // Show warning 5 minutes before expiry
                         showSessionWarning();
                     }
                 })
-                .catch(() => {
-                    // Redirect to login if an error occurs
-                    window.location.href = '/accounts/login/';
-                });
+                .catch(() => window.location.href = '/accounts/login/');
         }
 
-        // Periodically check the session timeout status
-        setInterval(checkSessionTimeout, 60000); // Check every minute
+        // Regularly check session timeout status
+        setInterval(checkSessionTimeout, 60000);
 
-        // Handle "Stay Logged In" button click
+        // Handle the "Stay Logged In" button
         document.addEventListener('DOMContentLoaded', () => {
             const stayLoggedInBtn = document.getElementById('stayLoggedInBtn');
             stayLoggedInBtn.addEventListener('click', () => {
@@ -101,16 +97,13 @@
                 })
                 .then(response => {
                     if (response.ok) {
-                        // Hide the modal upon successful session refresh
-                        document.getElementById('sessionTimeoutModal').classList.add('hidden');
+                        const modal = document.getElementById('sessionTimeoutModal');
+                        modal.classList.add('hidden');
                     } else {
-                        throw new Error('Failed to extend session');
+                        throw new Error('Session could not be extended');
                     }
                 })
-                .catch(() => {
-                    // Redirect to login if session refresh fails
-                    window.location.href = '/accounts/login/';
-                });
+                .catch(() => window.location.href = '/accounts/login/');
             });
         });
     </script>
