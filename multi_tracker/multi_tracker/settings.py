@@ -40,6 +40,8 @@ SESSION_COOKIE_AGE = 1200  # 20 minutes to account for network delay on reauthen
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Expire session when browser closes
 SESSION_COOKIE_SECURE = not DEBUG  # Secure cookies only in production
 SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookies
+SESSION_SAVE_EVERY_REQUEST = False
+
 
 # Custom Session Timeout for Middleware
 SESSION_TIMEOUT = 900  # 15 minutes

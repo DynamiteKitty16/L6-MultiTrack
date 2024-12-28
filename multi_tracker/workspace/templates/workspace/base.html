@@ -6,9 +6,7 @@
     <title>{% block title %}MultiTracker{% endblock %}</title>
 
     <!-- Link to the compiled Tailwind CSS -->
-    {% load static %}
     <link href="{% static 'css/output.css' %}" rel="stylesheet">
-
     {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -33,33 +31,65 @@
         <p>&copy; 2024 MultiTracker</p>
     </footer>
 
-
-    <!-- Include timeout handling if the user is authenticated -->
     {% if user.is_authenticated %}
-        <script>
-            const sessionTimeout = {{ request.session.get_expiry_age }}; // Total session expiry time in seconds
-            const warningTime = sessionTimeout - 60; // Show warning 1 minute before timeout
+        <!-- Modal for session timeout -->
+        <div id="timeout-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 1000;">
+            <div style="margin: 15% auto; padding: 20px; background-color: white; border-radius: 8px; width: 300px; text-align: center;">
+                <h3>Session Expiring</h3>
+                <p>Your session is about to expire. Do you want to stay logged in?</p>
+                <button id="stay-logged-in" style="margin-top: 10px; padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Stay Logged In</button>
+            </div>
+        </div>
 
-            // Function to show a warning modal
-            function showSessionWarning() {
-                if (confirm("Your session is about to expire. Do you want to stay logged in?")) {
-                    // Refresh session
-                    fetch("{% url 'session_timeout_warning' %}")
-                        .then(response => {
-                            if (response.ok) {
-                                alert("Your session has been refreshed.");
-                            } else {
-                                alert("Failed to refresh session. Please log in again.");
-                            }
-                        })
-                        .catch(error => console.error("Error refreshing session:", error));
-                }
+        <!-- JavaScript for session timeout handling -->
+        <script>
+            let inactivityTimeout, modalTimeout;
+            const inactivityDuration = 15 * 60 * 1000; // 15 minutes in milliseconds
+            const warningDuration = 60 * 1000; // Show the modal 1 minute before timeout
+
+            function resetInactivityTimer() {
+                clearTimeout(inactivityTimeout);
+                clearTimeout(modalTimeout);
+
+                // Schedule the modal to appear 1 minute before the session times out
+                modalTimeout = setTimeout(() => {
+                    document.getElementById("timeout-modal").style.display = "block";
+                }, inactivityDuration - warningDuration);
+
+                // Schedule logout if no action is taken
+                inactivityTimeout = setTimeout(() => {
+                    window.location.href = "{% url 'custom_logout' %}";
+                }, inactivityDuration);
             }
 
-            // Schedule the warning to appear
-            setTimeout(() => {
-                showSessionWarning();
-            }, warningTime * 1000); // Convert seconds to milliseconds
+            function stayLoggedIn() {
+                // Hide the modal
+                document.getElementById("timeout-modal").style.display = "none";
+
+                // Send a request to refresh the session
+                fetch("{% url 'session_timeout_warning' %}")
+                    .then(response => {
+                        if (response.ok) {
+                            resetInactivityTimer(); // Reset the timer on successful session refresh
+                        } else {
+                            alert("Failed to refresh session. Please log in again.");
+                            window.location.href = "{% url 'login' %}";
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error refreshing session:", error);
+                        alert("An error occurred. Please log in again.");
+                        window.location.href = "{% url 'login' %}";
+                    });
+            }
+
+            // Attach click handler to the "Stay Logged In" button
+            document.getElementById("stay-logged-in").addEventListener("click", stayLoggedIn);
+
+            // Reset timer on user activity
+            window.onload = resetInactivityTimer;
+            document.onmousemove = resetInactivityTimer;
+            document.onkeypress = resetInactivityTimer;
         </script>
     {% endif %}
 </body>
