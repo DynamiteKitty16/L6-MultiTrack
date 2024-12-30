@@ -49,8 +49,10 @@ def send_verification_email(user, verification_link):
     email.send()
 
 
-# Views
 def home(request):
+    """
+    Render the landing page.
+    """
     return render(request, 'workspace/landing.html', {"year": now().year})
 
 
