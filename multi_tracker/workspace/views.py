@@ -137,3 +137,65 @@ def dashboard(request):
 
     context = {"attendance_records": formatted_attendance, "leave_requests": formatted_leave_requests}
     return render(request, 'workspace/dashboard.html', context)
+
+
+@login_required
+def attendance_list(request):
+    """
+    Displays a list of attendance records for the logged-in user.
+    """
+    records = AttendanceRecord.objects.filter(user=request.user).order_by('-date')
+    return render(request, 'workspace/attendance_list.html', {'records': records})
+
+
+@login_required
+def attendance_create(request):
+    """
+    Handles creating a new attendance record.
+    """
+    if request.method == 'POST':
+        form = AttendanceRecordForm(request.POST)
+        if form.is_valid():
+            attendance = form.save(commit=False)
+            attendance.user = request.user
+            attendance.save()
+            return redirect('attendance_list')
+    else:
+        form = AttendanceRecordForm()
+
+    return render(request, 'workspace/attendance_create.html', {'form': form})
+
+
+@login_required
+def attendance_delete(request, pk):
+    """
+    Handles deleting an attendance record.
+    """
+    record = get_object_or_404(AttendanceRecord, pk=pk, user=request.user)
+    record.delete()
+    return redirect('attendance_list')
+
+
+@login_required
+def leave_request_list(request):
+    """
+    Displays a list of leave requests for the logged-in user.
+    """
+    leave_requests = LeaveRequest.objects.filter(user=request.user).order_by('-start_date')
+    return render(request, 'workspace/leave_request_list.html', {'leave_requests': leave_requests})
+
+
+@login_required
+def approve_leave(request, leave_id):
+    leave = get_object_or_404(LeaveRequest, id=leave_id, manager=request.user)
+    leave.status = 'A'
+    leave.save()
+    return redirect('dashboard')
+
+
+@login_required
+def reject_leave(request, leave_id):
+    leave = get_object_or_404(LeaveRequest, id=leave_id, manager=request.user)
+    leave.status = 'R'
+    leave.save()
+    return redirect('dashboard')

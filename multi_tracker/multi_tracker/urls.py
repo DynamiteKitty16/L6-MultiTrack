@@ -19,11 +19,17 @@ urlpatterns = [
     path('register/', views.register, name='register'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('verify-email/<uidb64>/<token>/', views.verify_email, name='verify_email'),
+    
+    # Leave Requests URLs (ensure `leave_request_list` exists in views)
     path('leave-requests/', views.leave_request_list, name='leave_requests'),
     path('leave/approve/<int:leave_id>/', views.approve_leave, name='approve_leave'),
     path('leave/reject/<int:leave_id>/', views.reject_leave, name='reject_leave'),
 
-    # Handling timeout
-    path('session_timeout_warning/', views.session_timeout_warning, name='session_timeout_warning'),
+    # Attendance URLs (ensure these views are in `views.py`)
+    path('attendance/', views.attendance_list, name='attendance_list'),
+    path('attendance/create/', views.attendance_create, name='attendance_create'),
+    path('attendance/delete/<int:pk>/', views.attendance_delete, name='attendance_delete'),
 
+    # Session Timeout URL
+    path('session_timeout_warning/', views.session_timeout_warning, name='session_timeout_warning'),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
