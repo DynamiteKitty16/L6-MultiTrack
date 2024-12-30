@@ -58,8 +58,8 @@ INSTALLED_APPS = [
     'workspace',
 ]
 
-if DEBUG:
-    INSTALLED_APPS += ['sslserver']
+#if DEBUG:
+#    INSTALLED_APPS += ['sslserver']
 
 
 MIDDLEWARE = [
