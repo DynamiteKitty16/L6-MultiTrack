@@ -7,3 +7,4 @@ db.sqlite3
 node_modules/
 staticfiles/
 *.css.map
+multi_tracker/workspace/migrations/0006_alter_attendancerecord_unique_together_and_more.py

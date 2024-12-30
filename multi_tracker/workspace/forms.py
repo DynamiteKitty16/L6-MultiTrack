@@ -1,159 +1,100 @@
 from django import forms
-from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator
-from django.utils.translation import gettext_lazy as _
-from django.utils.timezone import now
-from .models import AttendanceRecord, LeaveRequest, UserProfile
+from .models import UserProfile, User, AttendanceRecord, LeaveRequest
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
+from django.core.validators import RegexValidator
+from django.utils.translation import gettext_lazy as _
+from django.core.exceptions import ValidationError
 
+# Define any regex validators for Django
+name_regex = RegexValidator(r'^[A-Z][a-zA-Z\s]*$', 'First name and last name must start with a capital letter and can only contain letters and spaces.')
 
-# Validator for names
-name_regex = RegexValidator(
-    r'^[A-Z][a-zA-Z\s]*$',
-    'Names must start with a capital letter and can only contain letters and spaces.'
-)
-
-
-# Custom form for user registration
 class CustomUserCreationForm(UserCreationForm):
-    """
-    Custom form for user registration with email as the primary identifier and validations.
-    """
-    first_name = forms.CharField(
-        max_length=30,
-        validators=[name_regex],
-        required=True,
-        help_text="Enter your first name."
-    )
-    last_name = forms.CharField(
-        max_length=30,
-        validators=[name_regex],
-        required=True,
-        help_text="Enter your last name."
-    )
-    email = forms.EmailField(
-        required=True,
-        help_text="Enter a valid email address. This will be used to log in."
-    )
+    first_name = forms.CharField(max_length=30, validators=[name_regex])
+    last_name = forms.CharField(max_length=30, validators=[name_regex])
+    email = forms.EmailField(required=True)
 
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "email", "password1", "password2"]
+        fields = ("first_name", "last_name", "email", "password1", "password2")
 
     def __init__(self, *args, **kwargs):
         super(CustomUserCreationForm, self).__init__(*args, **kwargs)
-        self.fields['password1'].help_text = (
-            'Your password must be at least 8 characters long, contain at least one number, '
-            'one uppercase letter, and one special character.'
-        )
-        self.fields['password2'].help_text = 'Enter the same password as above, for verification.'
+        # This help texture should display as descriptive text below the field
+        self.fields['password1'].help_text = 'Your password must be at least 8 characters long, contain at least one number, one uppercase letter, and one special character.'
+        self.fields['password2'].help_text = 'Enter the same password as before, for verification.'
 
     def clean_email(self):
-        """
-        Validates that the email is unique across all users and normalizes it to lowercase.
-        """
-        email = self.cleaned_data.get('email')
-        if not email:
-            raise ValidationError("Please enter a valid email address.")
-        email = email.lower()  # Normalize to lowercase
+        email = self.cleaned_data['email']
         if User.objects.filter(email=email).exists():
-            raise ValidationError("This email is already registered. Please use a different email address.")
+            raise forms.ValidationError("This email address address is already in use.")
         return email
-
-    def clean(self):
-        """
-        Validates passwords and ensures form fields are consistent.
-        """
-        cleaned_data = super().clean()
-        password1 = cleaned_data.get("password1")
-        password2 = cleaned_data.get("password2")
-
-        # Password matching validation
-        if password1 and password2 and password1 != password2:
-            self.add_error('password1', "The passwords do not match. Please ensure both fields are identical.")
-
-        return cleaned_data
-
+    
     def save(self, commit=True):
-        """
-        Overridden save method to set email as the username.
-        Ensures uniqueness and assigns additional fields.
-        """
-        user = super().save(commit=False)
-        email = self.cleaned_data.get('email')
+        user = super(CustomUserCreationForm, self).save(commit=False)
+        first_name = self.cleaned_data['first_name']
+        last_name = self.cleaned_data['last_name']
+        email = self.cleaned_data['email']
 
-        if email:  # Ensure email is not None
-            email = email.lower()  # Normalize to lowercase
-            user.email = email
-            user.username = email  # Use normalized email as the username
-        user.first_name = self.cleaned_data.get('first_name')
-        user.last_name = self.cleaned_data.get('last_name')
+        # Generate username
+        # Using the counter to add an incrimental number if the username is the same as one that already exsists
+        base_username = f"{first_name}.{last_name}".lower()
+        username = base_username
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
+
+        user.username = username
+        user.first_name = first_name
+        user.last_name = last_name
+        user.email = email
 
         if commit:
             user.save()
         return user
 
+class UserProfileAdminForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = '__all__'
 
-# Form for leave requests
+    def __init__(self, *args, **kwargs):
+        super(UserProfileAdminForm, self).__init__(*args, **kwargs)
+        # Restrict manager choices to users who are managers
+        manager_user_ids = UserProfile.objects.filter(is_manager=True).values_list('user', flat=True)
+        self.fields['manager'].queryset = User.objects.filter(id__in=manager_user_ids)
+    
+class AttendanceRecordForm(forms.ModelForm):
+    class Meta:
+        model = AttendanceRecord
+        fields = '__all__'
+
 class LeaveRequestForm(forms.ModelForm):
-    """
-    Form for creating and validating leave requests.
-    """
     class Meta:
         model = LeaveRequest
         fields = ['leave_type', 'start_date', 'end_date']
-        widgets = {
-            'start_date': forms.DateInput(attrs={'type': 'date'}),
-            'end_date': forms.DateInput(attrs={'type': 'date'}),
-        }
+
+    def __init__(self, *args, **kwargs):
+        super(LeaveRequestForm, self).__init__(*args, **kwargs)
+        self.fields['start_date'].widget.attrs.update({'autocomplete': 'off'})
+        self.fields['end_date'].widget.attrs.update({'autocomplete': 'off'})
 
     def clean(self):
-        """
-        Custom validation for leave request dates.
-        """
         cleaned_data = super().clean()
-        start_date = cleaned_data.get('start_date')
-        end_date = cleaned_data.get('end_date')
+        start_date = cleaned_data.get("start_date")
+        end_date = cleaned_data.get("end_date")
 
-        # Validate start date is not in the past
-        if start_date and start_date < now().date():
-            self.add_error('start_date', _("Start date cannot be in the past unless you're a manager."))
+        # Check if start_date is a weekend
+        if start_date and start_date.weekday() >= 5:  # 5 for Saturday, 6 for Sunday
+            self.add_error('start_date', _("Start date cannot be on a weekend."))
 
-        # Validate end date is not before start date
-        if end_date and end_date < start_date:
+        # Check if end_date is a weekend
+        if end_date and end_date.weekday() >= 5:  # 5 for Saturday, 6 for Sunday
+            self.add_error('end_date', _("End date cannot be on a weekend."))
+        
+        # Check if end_date is before start_date
+        if start_date and end_date and end_date < start_date:
             self.add_error('end_date', _("End date cannot be before the start date."))
 
-        return cleaned_data
-
-
-# Form for attendance records
-class AttendanceRecordForm(forms.ModelForm):
-    """
-    Form for creating attendance records with custom validations.
-    """
-    class Meta:
-        model = AttendanceRecord
-        fields = ['date', 'type']
-        widgets = {
-            'date': forms.DateInput(attrs={'type': 'date'}),
-        }
-
-    def clean_date(self):
-        """
-        Validates that the attendance record date is not in the future.
-        """
-        date = self.cleaned_data.get('date')
-        if not date:  # Ensure the field is not None
-            raise ValidationError(_("The date field is required."))
-        if date > now().date():  # Validate future dates
-            raise ValidationError(_("You cannot log attendance for a future date."))
-        return date
-
-    def clean(self):
-        """
-        Additional validation for the form as a whole.
-        """
-        cleaned_data = super().clean()
-        self.clean_date()  # Ensure clean_date is executed
         return cleaned_data

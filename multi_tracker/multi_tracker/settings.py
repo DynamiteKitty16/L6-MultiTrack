@@ -56,10 +56,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'workspace',
+    'sslserver',
 ]
-
-#if DEBUG:
-#    INSTALLED_APPS += ['sslserver']
 
 
 MIDDLEWARE = [
